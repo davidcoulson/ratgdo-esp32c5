@@ -23,8 +23,8 @@ esphome:
   name_add_mac_suffix: true
 
 external_components:
-  - source: github://konnected-io/konnected-esphome@master
-    refresh: 1d
+  # Pinned to a known-good commit of master (2026-09-30). Bump deliberately.
+  - source: github://konnected-io/konnected-esphome@79905d5eb3bd290c1d4b0a4ebfca6061b0721cd4
     components: [secplus_gdo]
 
 api:
@@ -47,11 +47,12 @@ esp32:                                     # esp32:
     version: 6.1.0
     type: esp-idf
     components:
-      # Fork with the ESP-IDF 6 build fix (driver -> esp_driver_uart/gpio).
-      # Switch back to konnected-io/gdolib once konnected-io/gdolib#41 is merged.
+      # Fork with the ESP-IDF 6 build fix (driver -> esp_driver_uart/gpio),
+      # pinned to the fix commit. Switch back to konnected-io/gdolib once
+      # https://github.com/konnected-io/gdolib/pull/41 is merged and tagged.
       - name: gdolib
         source: https://github.com/davidcoulson/gdolib
-        ref: idf6-driver-split
+        ref: a9522884413595a63f5f71261829e7a313955caf
 
 improv_serial:
 

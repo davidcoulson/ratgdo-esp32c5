@@ -65,3 +65,17 @@ was switched the same way:
   frame confirmed the door moved each way.
 - On Security+ 1.0 the opener reports no opening count and no motor state, so those
   entities stay `unknown` / `off`.
+
+## Keeping it reproducible
+
+The config pins `konnected-esphome` and gdolib to commits rather than tracking
+`master`, so a rebuild months later gets the same code. Bump the pins on purpose, after
+reading the upstream changes.
+
+Two small fixes to `secplus_gdo` are also worth sending upstream:
+
+- `cover/__init__.py` defaults `pre_close_warning_duration` to a bare `0`, which fails
+  validation; it should be `"0s"`. The config here sets it explicitly to work around that.
+- `secplus_gdo.cpp`'s panic handler calls `gpio_ll_func_sel` on `GPIO_NUM_1` (the blaQ's
+  TX pin) rather than `GDO_UART_TX_PIN`. The following direction and pulldown calls do use
+  the configured pin, so the handler still mostly works on other boards.
