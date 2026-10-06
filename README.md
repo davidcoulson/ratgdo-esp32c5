@@ -49,7 +49,7 @@ bandwidth and CPU speed don't.
    |---|---|---|
    | [`ratgdo-secplus2-wt0132c5.yaml`](firmware/ratgdo-secplus2-wt0132c5.yaml) | Security+ 2.0 (yellow learn button) | Working on hardware |
    | [`ratgdo-secplus1-wt0132c5.yaml`](firmware/ratgdo-secplus1-wt0132c5.yaml) | Security+ 1.0 | Working on hardware |
-   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | Either (auto-detect) | **Experimental**, see below |
+   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | Either (auto-detect) | Working on hardware (Security+ 2.0). Needs a gdolib fix, see below |
 
 4. **Check it in Home Assistant.** Confirm the door state, open/close, the light and
    obstruction. In the ESPHome integration's device options, turn on **Allow the
@@ -69,7 +69,8 @@ hardware UART instead of software serial, is event-driven, and auto-detects
 Security+ 1.0 vs 2.0. It drops the dry-contact inputs and status outputs, and reads
 obstruction over the protocol instead of the sensor wire. Its entity names here
 match ratgdo's, so the Home Assistant entity IDs carry over when you switch.
-**This config is experimental.** It has not yet completed a build for the C5; see
+On the C5 it needs a one-line build fix in gdolib for ESP-IDF 6, so the config
+builds gdolib from a fork until that fix is merged upstream; see
 [the Konnected notes](docs/konnected.md).
 
 ## Docs

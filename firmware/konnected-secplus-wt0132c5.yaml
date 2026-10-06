@@ -1,4 +1,5 @@
-# EXPERIMENTAL - see docs/konnected.md before using.
+# See docs/konnected.md: builds gdolib from a fork until an ESP-IDF 6 fix is
+# merged upstream.
 #
 # ratgdo 2.5i with a WT0132C5-S5 (ESP32-C5) running Konnected's secplus_gdo
 # component instead of esphome-ratgdo. It auto-detects Security+ 1.0 / 2.0.
@@ -46,9 +47,11 @@ esp32:                                     # esp32:
     version: 6.1.0
     type: esp-idf
     components:
+      # Fork with the ESP-IDF 6 build fix (driver -> esp_driver_uart/gpio).
+      # Switch back to konnected-io/gdolib once that fix is merged upstream.
       - name: gdolib
-        source: https://github.com/konnected-io/gdolib
-        ref: v1.1.2
+        source: https://github.com/davidcoulson/gdolib
+        ref: idf6-driver-split
 
 improv_serial:
 
