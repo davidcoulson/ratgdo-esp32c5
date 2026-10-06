@@ -1,0 +1,35 @@
+# CodeQL for this repo. There is no application code here (ESPHome YAML and
+# docs), so the only thing to analyze is the GitHub Actions workflows.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (actions)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: actions
+          build-mode: none
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:actions
