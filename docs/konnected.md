@@ -90,9 +90,18 @@ Also seen on the Security+ 1.0 board: after a close was interrupted and the door
 reversed to open, Home Assistant sat on `closing` for six minutes until a wall-button
 press closed the door for real.
 
-Until this is resolved, use the ratgdo config on Security+ 1.0 openers. The ratgdo
-firmware drives TX as a plain GPIO output, and its one observed reboot didn't move the
-door; a repeat test on that firmware is the next step.
+**Cause:** ESPHome runs `on_shutdown()` before every OTA update and restart.
+`secplus_gdo`'s `on_shutdown()` calls gdolib's `gdo_deinit()`, which releases the TX pin
+with ESP-IDF's `gpio_reset_pin()`. That function enables the pin's internal pull-up, which
+switches on the board's TX transistor and holds the Security+ 1.0 line low (a button
+press) for the whole reboot. esphome-ratgdo never resets the pin, so its TX stays low; a
+Restart on the ratgdo firmware left the door closed.
+
+**Fix:** [konnected-io/gdolib#42](https://github.com/konnected-io/gdolib/pull/42) parks TX
+at the line's idle level with `gpio_hold` instead. It is combined with the IDF 6 build fix
+on [`davidcoulson/gdolib@ratgdo-c5`](https://github.com/davidcoulson/gdolib/tree/ratgdo-c5).
+A hardware retest on the Security+ 1.0 board is pending. Until it passes, use the ratgdo
+config on Security+ 1.0 openers.
 
 ## Keeping it reproducible
 
