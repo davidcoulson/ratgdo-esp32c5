@@ -1,0 +1,219 @@
+# EXPERIMENTAL - see docs/konnected.md before using.
+#
+# ratgdo 2.5i with a WT0132C5-S5 (ESP32-C5) running Konnected's secplus_gdo
+# component instead of esphome-ratgdo. It auto-detects Security+ 1.0 / 2.0.
+#
+# Entity names match esphome-ratgdo's (Door, Light, Motion, ...) so the entity
+# unique IDs, and Home Assistant entity IDs, carry over when switching from a
+# ratgdo config on the same device name. secplus_gdo drops the ratgdo's
+# dry-contact inputs and status outputs, and reads obstruction over the
+# Security+ protocol, so the obstruction wire (GPIO6) is unused.
+
+substitutions:
+  name: ratgdo-c5
+  friendly_name: ratgdo C5
+# WT0132C5                                 # WT0132C6
+  uart_tx_pin: GPIO25                      #   uart_tx_pin: GPIO3
+  uart_rx_pin: GPIO26                      #   uart_rx_pin: GPIO10
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: true
+
+external_components:
+  - source: github://konnected-io/konnected-esphome@master
+    refresh: 1d
+    components: [secplus_gdo]
+
+api:
+
+ota:
+  - platform: esphome
+
+logger:
+
+web_server:
+  local: true
+
+captive_portal:
+
+# WT0132C5                                 # WT0132C6
+esp32:                                     # esp32:
+  board: esp32-c5-devkitc-1                #   board: esp32-c6-devkitc-1
+  variant: esp32c5                         #   variant: esp32c6
+  framework:
+    version: 6.1.0
+    type: esp-idf
+    components:
+      - name: gdolib
+        source: https://github.com/konnected-io/gdolib
+        ref: v1.1.2
+
+improv_serial:
+
+secplus_gdo:
+  id: gdo
+  input_gdo_pin: ${uart_rx_pin}
+  output_gdo_pin: ${uart_tx_pin}
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "ratgdo"
+  # Start talking to the opener once Wi-Fi is up (Konnected's pattern).
+  on_connect:
+    - lambda: id(gdo).start_gdo();
+
+cover:
+  - platform: secplus_gdo
+    name: Door
+    id: gdo_door
+    secplus_gdo_id: gdo
+    # No buzzer or warning LED on the ratgdo board. Set explicitly: the
+    # component's own default (0, no unit) fails validation.
+    pre_close_warning_duration: 0s
+
+light:
+  - platform: secplus_gdo
+    name: Light
+    id: gdo_light
+    secplus_gdo_id: gdo
+
+lock:
+  - platform: secplus_gdo
+    name: Lock remotes
+    id: gdo_lock_remotes
+    secplus_gdo_id: gdo
+
+sensor:
+  - platform: secplus_gdo
+    name: Openings
+    id: gdo_openings
+    type: openings
+    secplus_gdo_id: gdo
+    unit_of_measurement: openings
+    icon: mdi:open-in-app
+
+binary_sensor:
+  - platform: secplus_gdo
+    name: Motion
+    id: gdo_motion
+    type: motion
+    device_class: motion
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Obstruction
+    id: gdo_obst
+    type: obstruction
+    device_class: problem
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Motor
+    id: gdo_motor
+    type: motor
+    device_class: running
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Button
+    id: gdo_button
+    type: button
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Synced
+    id: gdo_synced
+    type: sync
+    device_class: connectivity
+    entity_category: diagnostic
+    secplus_gdo_id: gdo
+
+switch:
+  - platform: secplus_gdo
+    name: Learn
+    id: gdo_learn
+    type: learn
+    icon: mdi:plus-box
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Toggle Only
+    id: gdo_toggle_only
+    type: toggle_only
+    entity_category: config
+    secplus_gdo_id: gdo
+
+select:
+  - platform: secplus_gdo
+    name: Security+ protocol
+    id: gdo_protocol
+    icon: mdi:settings
+    entity_category: config
+    secplus_gdo_id: gdo
+
+number:
+  - platform: secplus_gdo
+    name: Opening duration
+    id: gdo_open_duration
+    type: open_duration
+    unit_of_measurement: ms
+    entity_category: config
+    internal: true
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Closing duration
+    id: gdo_close_duration
+    type: close_duration
+    unit_of_measurement: ms
+    entity_category: config
+    internal: true
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Client ID
+    id: gdo_client_id
+    type: client_id
+    mode: box
+    entity_category: config
+    internal: true
+    secplus_gdo_id: gdo
+  - platform: secplus_gdo
+    name: Rolling Code
+    id: gdo_rolling_code
+    type: rolling_code
+    mode: box
+    entity_category: config
+    internal: true
+    secplus_gdo_id: gdo
+
+button:
+  - platform: restart
+    name: Restart
+    id: restart_btn
+  - platform: safe_mode
+    name: Safe mode boot
+  - platform: template
+    name: Reset door timings
+    id: reset_door_timings
+    entity_category: config
+    on_press:
+      - number.set:
+          id: gdo_open_duration
+          value: 0
+      - number.set:
+          id: gdo_close_duration
+          value: 0
+      - button.press: restart_btn
+  # Konnected's Re-sync: new random client ID, rolling code back to 0, reboot.
+  - platform: template
+    name: Re-sync
+    id: resync
+    entity_category: config
+    on_press:
+      - lambda: |-
+          uint32_t random_upper = (random_uint32() & 0x7F7F) << 16;
+          uint32_t client_id = random_upper | 0x2908;
+          ESP_LOGW("resync", "Re-syncing with Client ID: 0x%08" PRIX32, client_id);
+          id(gdo_client_id).update_state(client_id);
+      - number.set:
+          id: gdo_rolling_code
+          value: 0
+      - button.press: restart_btn

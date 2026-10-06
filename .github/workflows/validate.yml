@@ -1,0 +1,24 @@
+name: Validate configs
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - ratgdo-secplus2-wt0132c5.yaml
+          - ratgdo-secplus1-wt0132c5.yaml
+          - konnected-secplus-wt0132c5.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install "esphome==2026.9.1"
+      - run: cp firmware/secrets.yaml.example firmware/secrets.yaml
+      - run: esphome config firmware/${{ matrix.config }}
