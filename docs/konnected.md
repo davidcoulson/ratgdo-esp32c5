@@ -56,3 +56,12 @@ fix above):
 - Close and open from Home Assistant worked: about 15.6 s down and 14.2 s up, with
   motor and door states tracking each move.
 - The Home Assistant cover entity ID carried over from the ratgdo config unchanged.
+
+The same day a second board, on a **Security+ 1.0** opener with a smart wall panel,
+was switched the same way:
+
+- It synced on first boot and auto-detected "Security+ 1.0 with smart panel".
+- Open and close from Home Assistant worked: about 11 s up and 12.7 s down. A camera
+  frame confirmed the door moved each way.
+- On Security+ 1.0 the opener reports no opening count and no motor state, so those
+  entities stay `unknown` / `off`.

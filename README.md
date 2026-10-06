@@ -49,7 +49,7 @@ bandwidth and CPU speed don't.
    |---|---|---|
    | [`ratgdo-secplus2-wt0132c5.yaml`](firmware/ratgdo-secplus2-wt0132c5.yaml) | Security+ 2.0 (yellow learn button) | Working on hardware |
    | [`ratgdo-secplus1-wt0132c5.yaml`](firmware/ratgdo-secplus1-wt0132c5.yaml) | Security+ 1.0 | Working on hardware |
-   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | Either (auto-detect) | Working on hardware (Security+ 2.0). Needs a gdolib fix, see below |
+   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | Either (auto-detect) | Working on hardware (Security+ 1.0 and 2.0). Needs a gdolib fix, see below |
 
 4. **Check it in Home Assistant.** Confirm the door state, open/close, the light and
    obstruction. In the ESPHome integration's device options, turn on **Allow the
