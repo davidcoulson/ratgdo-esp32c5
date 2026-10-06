@@ -116,3 +116,15 @@ Two small fixes to `secplus_gdo` are also worth sending upstream:
 - `secplus_gdo.cpp`'s panic handler calls `gpio_ll_func_sel` on `GPIO_NUM_1` (the blaQ's
   TX pin) rather than `GDO_UART_TX_PIN`. The following direction and pulldown calls do use
   the configured pin, so the handler still mostly works on other boards.
+
+## Other findings from a code review
+
+- **Force the protocol.** If auto-detection fails, gdolib falls back to transmitting the
+  other protocol on the wire, and the component retries sync forever. The config sets the
+  protocol select's `initial_option`.
+- **Close after a stopped close (Security+ 1.0 / toggle-only).** `gdo_door_close()` lacked
+  the stop-then-move sequence `gdo_door_open()` has, so "close" on a door stopped part-way
+  while closing ran it up. Fixed on
+  [`davidcoulson/gdolib@close-after-stop`](https://github.com/davidcoulson/gdolib/tree/close-after-stop),
+  included in `ratgdo-c5`.
+- **Security+ 1.0 state after a reversal** can stay on `closing`; not yet diagnosed.

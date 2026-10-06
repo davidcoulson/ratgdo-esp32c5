@@ -154,6 +154,9 @@ select:
     icon: mdi:settings
     entity_category: config
     secplus_gdo_id: gdo
+    # Force the protocol: if auto-detection fails, gdolib falls back to transmitting
+    # the other protocol on the wire. Used when nothing is saved in flash.
+    initial_option: "security+2.0"
 
 number:
   - platform: secplus_gdo
