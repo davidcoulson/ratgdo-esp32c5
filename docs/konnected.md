@@ -58,13 +58,41 @@ fix above):
 - The Home Assistant cover entity ID carried over from the ratgdo config unchanged.
 
 The same day a second board, on a **Security+ 1.0** opener with a smart wall panel,
-was switched the same way:
+was switched the same way. It synced, auto-detected "Security+ 1.0 with smart panel",
+and opened and closed from Home Assistant (about 11 s up, 12.7 s down, confirmed on
+camera). It was then **rolled back to esphome-ratgdo** for the reason below.
 
-- It synced on first boot and auto-detected "Security+ 1.0 with smart panel".
-- Open and close from Home Assistant worked: about 11 s up and 12.7 s down. A camera
-  frame confirmed the door moved each way.
-- On Security+ 1.0 the opener reports no opening count and no motor state, so those
-  entities stay `unknown` / `off`.
+## Security+ 1.0: reboot opens the door
+
+Three reboots with the Konnected firmware running on the Security+ 1.0 board:
+
+| Reboot | Started from | Door |
+|---|---|---|
+| OTA reflash, ratgdo → Konnected | ratgdo firmware | stayed closed |
+| OTA reflash, Konnected → Konnected | Konnected firmware | **opened** |
+| Restart button | Konnected firmware | **opened** |
+
+The Security+ 2.0 board rebooted alongside each time and never moved.
+
+What's known:
+- A Security+ 1.0 opener treats its wall-control line being held low as a button
+  press. The ratgdo's TX transistor shorts that line whenever its GPIO is high.
+- gdolib sends no door command at startup. With a smart panel it only listens, and its
+  panel-emulation poll bytes (`0x35 0x33 0x53 0x38 0x3A 0x39`) never include the door
+  toggle (`0x30`).
+- So the TX GPIO is going high during the reboot. Konnected drives it as an inverted
+  UART1 output (idle low). Candidates: the peripheral reset at shutdown, when the
+  inversion bit clears while the GPIO matrix still routes UART TX to the pin, and the
+  C5 strapping pull-up on GPIO25 during reset. Not yet proven either way.
+- Security+ 2.0 is immune because it ignores a shorted line.
+
+Also seen on the Security+ 1.0 board: after a close was interrupted and the door
+reversed to open, Home Assistant sat on `closing` for six minutes until a wall-button
+press closed the door for real.
+
+Until this is resolved, use the ratgdo config on Security+ 1.0 openers. The ratgdo
+firmware drives TX as a plain GPIO output, and its one observed reboot didn't move the
+door; a repeat test on that firmware is the next step.
 
 ## Keeping it reproducible
 

@@ -49,7 +49,7 @@ bandwidth and CPU speed don't.
    |---|---|---|
    | [`ratgdo-secplus2-wt0132c5.yaml`](firmware/ratgdo-secplus2-wt0132c5.yaml) | Security+ 2.0 (yellow learn button) | Working on hardware |
    | [`ratgdo-secplus1-wt0132c5.yaml`](firmware/ratgdo-secplus1-wt0132c5.yaml) | Security+ 1.0 | Working on hardware |
-   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | Either (auto-detect) | Working on hardware (Security+ 1.0 and 2.0). Needs a gdolib fix, see below |
+   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | **Security+ 2.0 only** | Working on hardware. **Do not use on Security+ 1.0: it opened the door on every reboot.** See below |
 
 4. **Check it in Home Assistant.** Confirm the door state, open/close, the light and
    obstruction. In the ESPHome integration's device options, turn on **Allow the
@@ -72,6 +72,14 @@ match ratgdo's, so the Home Assistant entity IDs carry over when you switch.
 On the C5 it needs a one-line build fix in gdolib for ESP-IDF 6, so the config
 builds gdolib from a fork until that fix is merged upstream; see
 [the Konnected notes](docs/konnected.md).
+
+> **Warning: Security+ 1.0 openers.** On this board, every reboot of the Konnected
+> firmware opened a Security+ 1.0 door (three reboots, two openings, the third started
+> from the ratgdo firmware and didn't). A Security+ 1.0 opener treats the wall-control
+> line being held low as a button press, and the board's TX pin does that when it goes
+> high during reset. Wi-Fi loss, safe mode and brownouts all reboot the board unattended.
+> Use the ratgdo config for Security+ 1.0 until this is understood; details in
+> [the Konnected notes](docs/konnected.md#security-10-reboot-opens-the-door).
 
 ## Docs
 
