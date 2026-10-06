@@ -48,7 +48,7 @@ esp32:                                     # esp32:
     type: esp-idf
     components:
       # Fork with the ESP-IDF 6 build fix (driver -> esp_driver_uart/gpio).
-      # Switch back to konnected-io/gdolib once that fix is merged upstream.
+      # Switch back to konnected-io/gdolib once konnected-io/gdolib#41 is merged.
       - name: gdolib
         source: https://github.com/davidcoulson/gdolib
         ref: idf6-driver-split

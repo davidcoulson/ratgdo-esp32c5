@@ -33,7 +33,8 @@ can't link for the RISC-V C5 or C6.
 
 - **gdolib v1.1.2 doesn't build on ESP-IDF 6.x.** Until the fix is merged upstream,
   the config builds gdolib from
-  [`davidcoulson/gdolib@idf6-driver-split`](https://github.com/davidcoulson/gdolib/tree/idf6-driver-split).
+  [`davidcoulson/gdolib@idf6-driver-split`](https://github.com/davidcoulson/gdolib/tree/idf6-driver-split)
+  ([konnected-io/gdolib#41](https://github.com/konnected-io/gdolib/pull/41)).
   Details: Its `CMakeLists.txt` requires the
   old `driver` umbrella component, which IDF 6 split into `esp_driver_*` components,
   so `driver/uart.h` isn't found. The fix is to require `esp_driver_uart` and
