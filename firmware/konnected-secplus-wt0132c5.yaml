@@ -1,9 +1,11 @@
-# SECURITY+ 2.0 ONLY. On a Security+ 1.0 opener this firmware opened the door on
-# every reboot; see docs/konnected.md. Builds gdolib from a fork until an
-# ESP-IDF 6 fix is merged upstream.
-#
 # ratgdo 2.5i with a WT0132C5-S5 (ESP32-C5) running Konnected's secplus_gdo
-# component instead of esphome-ratgdo. It auto-detects Security+ 1.0 / 2.0.
+# component instead of esphome-ratgdo. Works on Security+ 1.0 and 2.0: set
+# secplus_protocol below.
+#
+# Builds gdolib from a fork. Upstream gdolib doesn't build on ESP-IDF 6, and on
+# a Security+ 1.0 opener it opens the door on every reboot; see docs/konnected.md.
+# Don't point gdolib back at upstream on Security+ 1.0 until
+# https://github.com/konnected-io/gdolib/pull/42 is merged.
 #
 # Entity names match esphome-ratgdo's (Door, Light, Motion, ...) so the entity
 # unique IDs, and Home Assistant entity IDs, carry over when switching from a
@@ -17,11 +19,33 @@ substitutions:
 # WT0132C5                                 # WT0132C6
   uart_tx_pin: GPIO25                      #   uart_tx_pin: GPIO3
   uart_rx_pin: GPIO26                      #   uart_rx_pin: GPIO10
+  # Your opener's protocol: "security+2.0" or "security+1.0 with smart panel".
+  secplus_protocol: "security+2.0"
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   name_add_mac_suffix: true
+  on_boot:
+    # Workaround: after a power-on (cold) boot one of our two boards never syncs
+    # with the opener, while any software restart syncs within seconds. If a
+    # hardware reset (power-on, brownout, crash, watchdog) hasn't synced 90 s in,
+    # restart once. That restart is a software reset, so this cannot loop.
+    priority: -100
+    then:
+      - if:
+          condition:
+            lambda: 'return esp_reset_reason() != ESP_RST_SW;'
+          then:
+            - delay: 90s
+            - if:
+                condition:
+                  lambda: 'return !id(gdo_synced).has_state() || !id(gdo_synced).state;'
+                then:
+                  - logger.log:
+                      level: WARN
+                      format: "Not synced 90 s after a hardware reset; restarting once"
+                  - button.press: restart_btn
 
 external_components:
   # Pinned to a known-good commit of master (2026-09-30). Bump deliberately.
@@ -48,12 +72,15 @@ esp32:                                     # esp32:
     version: 6.1.0
     type: esp-idf
     components:
-      # Fork with the ESP-IDF 6 build fix (driver -> esp_driver_uart/gpio),
-      # pinned to the fix commit. Switch back to konnected-io/gdolib once
-      # https://github.com/konnected-io/gdolib/pull/41 is merged and tagged.
+      # Fork branch ratgdo-c5-next, pinned to a commit. It carries fixes that
+      # aren't merged upstream yet (docs/konnected.md lists them), including:
+      #   - ESP-IDF 6 build fix (https://github.com/konnected-io/gdolib/pull/41)
+      #   - hold TX at idle on deinit, so a reboot doesn't press the wall button
+      #     on Security+ 1.0 (https://github.com/konnected-io/gdolib/pull/42)
+      #   - toggle-only close after stop (https://github.com/konnected-io/gdolib/pull/43)
       - name: gdolib
         source: https://github.com/davidcoulson/gdolib
-        ref: a9522884413595a63f5f71261829e7a313955caf
+        ref: 88660df018d1112418860360c5b0a4636f457391
 
 improv_serial:
 
@@ -156,7 +183,7 @@ select:
     secplus_gdo_id: gdo
     # Force the protocol: if auto-detection fails, gdolib falls back to transmitting
     # the other protocol on the wire. Used when nothing is saved in flash.
-    initial_option: "security+2.0"
+    initial_option: ${secplus_protocol}
 
 number:
   - platform: secplus_gdo
