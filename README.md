@@ -49,7 +49,7 @@ bandwidth and CPU speed don't.
    |---|---|---|
    | [`ratgdo-secplus2-wt0132c5.yaml`](firmware/ratgdo-secplus2-wt0132c5.yaml) | Security+ 2.0 (yellow learn button) | Working on hardware |
    | [`ratgdo-secplus1-wt0132c5.yaml`](firmware/ratgdo-secplus1-wt0132c5.yaml) | Security+ 1.0 | Working on hardware |
-   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | **Security+ 2.0 only** | Working on hardware. **Do not use on Security+ 1.0: it opened the door on every reboot.** See below |
+   | [`konnected-secplus-wt0132c5.yaml`](firmware/konnected-secplus-wt0132c5.yaml) | Security+ 1.0 or 2.0 | Working on hardware. Builds gdolib from a fork; see below |
 
 4. **Check it in Home Assistant.** Confirm the door state, open/close, the light and
    obstruction. In the ESPHome integration's device options, turn on **Allow the
@@ -69,16 +69,15 @@ hardware UART instead of software serial, is event-driven, and auto-detects
 Security+ 1.0 vs 2.0. It drops the dry-contact inputs and status outputs, and reads
 obstruction over the protocol instead of the sensor wire. Its entity names here
 match ratgdo's, so the Home Assistant entity IDs carry over when you switch.
-On the C5 it needs a one-line build fix in gdolib for ESP-IDF 6, so the config
-builds gdolib from a fork until that fix is merged upstream; see
-[the Konnected notes](docs/konnected.md).
+The config builds gdolib from a fork, because two fixes it needs aren't merged
+upstream yet: a build fix for ESP-IDF 6, and a fix for Security+ 1.0 doors opening on
+every reboot. See [the Konnected notes](docs/konnected.md).
 
-> **Warning: Security+ 1.0 openers.** On this board, every reboot of the Konnected
-> firmware opened a Security+ 1.0 door (three reboots, two openings, the third started
-> from the ratgdo firmware and didn't). A Security+ 1.0 opener treats the wall-control
-> line being held low as a button press, and the board's TX pin does that when it goes
-> high during reset. Wi-Fi loss, safe mode and brownouts all reboot the board unattended.
-> Use the ratgdo config for Security+ 1.0 until this is understood; details in
+> **Warning: Security+ 1.0 openers.** With upstream gdolib, every restart or OTA update
+> of the Konnected firmware opened a Security+ 1.0 door. The config here pins a gdolib
+> fork with the fix ([konnected-io/gdolib#42](https://github.com/konnected-io/gdolib/pull/42)),
+> so keep that pin until the fix is merged upstream. The fix runs at shutdown, so it
+> covers restarts and OTA updates, not a crash or brownout. Details in
 > [the Konnected notes](docs/konnected.md#security-10-reboot-opens-the-door).
 
 ## Docs

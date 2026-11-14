@@ -20,7 +20,8 @@ can't link for the RISC-V C5 or C6.
 
 - Reads the opener through the **hardware UART** (UART1) instead of software serial,
   and is event-driven.
-- **Auto-detects Security+ 1.0 vs 2.0.** A select entity can force one.
+- **Auto-detects Security+ 1.0 vs 2.0.** A select entity can force one; the config
+  sets it from the `secplus_protocol` substitution.
 - **Obstruction comes from the protocol,** so the ratgdo's obstruction wire input
   (GPIO6) is unused.
 - **No dry-contact inputs or status outputs.**
@@ -32,9 +33,8 @@ can't link for the RISC-V C5 or C6.
 ## Known issues
 
 - **gdolib v1.1.2 doesn't build on ESP-IDF 6.x.** Until the fix is merged upstream,
-  the config builds gdolib from
-  [`davidcoulson/gdolib@idf6-driver-split`](https://github.com/davidcoulson/gdolib/tree/idf6-driver-split)
-  ([konnected-io/gdolib#41](https://github.com/konnected-io/gdolib/pull/41)).
+  the config builds gdolib from a fork (see [the gdolib fork](#the-gdolib-fork)); the
+  fix is [konnected-io/gdolib#41](https://github.com/konnected-io/gdolib/pull/41).
   Details: Its `CMakeLists.txt` requires the
   old `driver` umbrella component, which IDF 6 split into `esp_driver_*` components,
   so `driver/uart.h` isn't found. The fix is to require `esp_driver_uart` and
@@ -60,7 +60,8 @@ fix above):
 The same day a second board, on a **Security+ 1.0** opener with a smart wall panel,
 was switched the same way. It synced, auto-detected "Security+ 1.0 with smart panel",
 and opened and closed from Home Assistant (about 11 s up, 12.7 s down, confirmed on
-camera). It was then **rolled back to esphome-ratgdo** for the reason below.
+camera). It was rolled back to esphome-ratgdo for the reason below, then switched
+back to this config with the fixed gdolib on 2026-10-08, and has run it since.
 
 ## Security+ 1.0: reboot opens the door
 
@@ -99,9 +100,40 @@ Restart on the ratgdo firmware left the door closed.
 
 **Fix:** [konnected-io/gdolib#42](https://github.com/konnected-io/gdolib/pull/42) parks TX
 at the line's idle level with `gpio_hold` instead. It is combined with the IDF 6 build fix
-on [`davidcoulson/gdolib@ratgdo-c5`](https://github.com/davidcoulson/gdolib/tree/ratgdo-c5).
-A hardware retest on the Security+ 1.0 board is pending. Until it passes, use the ratgdo
-config on Security+ 1.0 openers.
+in the fork the config pins (see [the gdolib fork](#the-gdolib-fork)).
+
+On the Security+ 1.0 board, the OTA updates of 2026-11-07 (door open) and 2026-11-13
+(door closed) left the door where it was.
+
+Limits:
+- The fix runs in `gdo_deinit()`, so it covers restarts and OTA updates. A crash,
+  watchdog reset or brownout skips it.
+- The C5 strapping pull-up on GPIO25 (opener TX on the WT0132C5) during reset hasn't
+  been ruled out as a second cause.
+
+## The gdolib fork
+
+The config pins a commit on
+[`davidcoulson/gdolib@ratgdo-c5-next`](https://github.com/davidcoulson/gdolib/tree/ratgdo-c5-next).
+On top of upstream it has:
+
+- the ESP-IDF 6 build fix ([#41](https://github.com/konnected-io/gdolib/pull/41));
+- TX held at idle on deinit ([#42](https://github.com/konnected-io/gdolib/pull/42));
+- toggle-only close after a stop ([#43](https://github.com/konnected-io/gdolib/pull/43));
+- Security+ 1.0: Stop while closing stops the door instead of reversing it, and checks
+  that the stop took;
+- Security+ 1.0: presses held for 250 ms, and no `GET_STATUS` sent on a 1.0 bus;
+- Security+ 2.0: the RX stream realigns after a framing error, and a stale pending
+  receive is cleared at start (it could block the first sync);
+- obstruction is polled while set, so it can't stick.
+
+Go back to `konnected-io/gdolib` once these are merged and tagged.
+
+## Cold-boot sync workaround
+
+After a power-on boot, one of the two boards never synced with its opener, while any
+software restart synced within seconds. The cause isn't found. The config's `on_boot`
+block restarts once if a hardware reset hasn't synced after 90 s.
 
 ## Keeping it reproducible
 
@@ -125,6 +157,7 @@ Two small fixes to `secplus_gdo` are also worth sending upstream:
 - **Close after a stopped close (Security+ 1.0 / toggle-only).** `gdo_door_close()` lacked
   the stop-then-move sequence `gdo_door_open()` has, so "close" on a door stopped part-way
   while closing ran it up. Fixed on
-  [`davidcoulson/gdolib@close-after-stop`](https://github.com/davidcoulson/gdolib/tree/close-after-stop),
-  included in `ratgdo-c5`.
-- **Security+ 1.0 state after a reversal** can stay on `closing`; not yet diagnosed.
+  [`davidcoulson/gdolib@close-after-stop`](https://github.com/davidcoulson/gdolib/tree/close-after-stop)
+  ([#43](https://github.com/konnected-io/gdolib/pull/43)), included in the pinned fork.
+- **Security+ 1.0 state after a reversal** can stay on `closing` until the next
+  restart; not yet diagnosed.
